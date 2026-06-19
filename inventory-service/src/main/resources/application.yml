@@ -1,0 +1,52 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: inventory-service
+  datasource:
+    url: ${INVENTORY_DB_URL:jdbc:postgresql://localhost:5433/inventory_db}
+    username: ${INVENTORY_DB_USER:postgres}
+    password: ${INVENTORY_DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 10
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+
+api:
+  key: ${INVENTORY_API_KEY:inventory-api-key-change-in-production}
+
+products:
+  service:
+    url: ${PRODUCTS_SERVICE_URL:http://localhost:8081}
+    api-key: ${PRODUCTS_API_KEY:products-api-key-change-in-production}
+    timeout-ms: ${PRODUCTS_SERVICE_TIMEOUT:5000}
+    max-retries: 3
+    retry-delay-ms: 1000
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+  paths-to-match: /api/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.linktic.inventory: INFO
