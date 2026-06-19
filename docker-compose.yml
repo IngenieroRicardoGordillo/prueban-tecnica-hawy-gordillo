@@ -1,0 +1,113 @@
+services:
+  postgres-products:
+    image: postgres:15-alpine
+    container_name: postgres-products
+    environment:
+      POSTGRES_DB: products_db
+      POSTGRES_USER: ${PRODUCTS_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${PRODUCTS_DB_PASSWORD:-products_secret}
+    volumes:
+      - postgres-products-data:/var/lib/postgresql/data
+    networks:
+      - linktic-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PRODUCTS_DB_USER:-postgres} -d products_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-inventory:
+    image: postgres:15-alpine
+    container_name: postgres-inventory
+    environment:
+      POSTGRES_DB: inventory_db
+      POSTGRES_USER: ${INVENTORY_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${INVENTORY_DB_PASSWORD:-inventory_secret}
+    volumes:
+      - postgres-inventory-data:/var/lib/postgresql/data
+    networks:
+      - linktic-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${INVENTORY_DB_USER:-postgres} -d inventory_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  products-service:
+    build:
+      context: ./products-service
+      dockerfile: Dockerfile
+    container_name: products-service
+    ports:
+      - "8081:8081"
+    environment:
+      PRODUCTS_DB_URL: jdbc:postgresql://postgres-products:5432/products_db
+      PRODUCTS_DB_USER: ${PRODUCTS_DB_USER:-postgres}
+      PRODUCTS_DB_PASSWORD: ${PRODUCTS_DB_PASSWORD:-products_secret}
+      PRODUCTS_API_KEY: ${PRODUCTS_API_KEY:-products-api-key-change-in-production}
+    depends_on:
+      postgres-products:
+        condition: service_healthy
+    networks:
+      - linktic-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health | grep -q UP || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+
+  inventory-service:
+    build:
+      context: ./inventory-service
+      dockerfile: Dockerfile
+    container_name: inventory-service
+    ports:
+      - "8082:8082"
+    environment:
+      INVENTORY_DB_URL: jdbc:postgresql://postgres-inventory:5432/inventory_db
+      INVENTORY_DB_USER: ${INVENTORY_DB_USER:-postgres}
+      INVENTORY_DB_PASSWORD: ${INVENTORY_DB_PASSWORD:-inventory_secret}
+      INVENTORY_API_KEY: ${INVENTORY_API_KEY:-inventory-api-key-change-in-production}
+      PRODUCTS_SERVICE_URL: http://products-service:8081
+      PRODUCTS_API_KEY: ${PRODUCTS_API_KEY:-products-api-key-change-in-production}
+      PRODUCTS_SERVICE_TIMEOUT: 5000
+    depends_on:
+      postgres-inventory:
+        condition: service_healthy
+      products-service:
+        condition: service_healthy
+    networks:
+      - linktic-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health | grep -q UP || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_PRODUCTS_API_URL: ${VITE_PRODUCTS_API_URL:-http://localhost:8081}
+        VITE_INVENTORY_API_URL: ${VITE_INVENTORY_API_URL:-http://localhost:8082}
+        VITE_PRODUCTS_API_KEY: ${PRODUCTS_API_KEY:-products-api-key-change-in-production}
+        VITE_INVENTORY_API_KEY: ${INVENTORY_API_KEY:-inventory-api-key-change-in-production}
+    container_name: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      inventory-service:
+        condition: service_healthy
+    networks:
+      - linktic-net
+
+volumes:
+  postgres-products-data:
+  postgres-inventory-data:
+
+networks:
+  linktic-net:
+    driver: bridge
