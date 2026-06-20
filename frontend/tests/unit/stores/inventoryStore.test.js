@@ -17,26 +17,34 @@ describe('inventoryStore', () => {
     vi.clearAllMocks()
   })
 
-  it('estado inicial es vacío y sin errores', () => {
+  it('estado inicial es vacío, sin errores y con paginación en página 0', () => {
     const store = useInventoryStore()
 
     expect(store.inventoryList).toEqual([])
     expect(store.purchaseResult).toBeNull()
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
+    expect(store.pagination.page).toBe(0)
+    expect(store.pagination.totalElements).toBe(0)
   })
 
-  it('fetchInventory - carga la lista correctamente', async () => {
+  it('fetchInventory - carga la página y actualiza metadatos de paginación', async () => {
     const mockList = [
       { productoId: 'p-1', cantidad: 10 },
       { productoId: 'p-2', cantidad: 25 }
     ]
-    inventoryService.getAll.mockResolvedValue(mockList)
+    const pageResponse = {
+      content: mockList, page: 0, size: 10,
+      totalElements: 2, totalPages: 1, last: true
+    }
+    inventoryService.getAll.mockResolvedValue(pageResponse)
 
     const store = useInventoryStore()
     await store.fetchInventory()
 
     expect(store.inventoryList).toEqual(mockList)
+    expect(store.pagination.totalElements).toBe(2)
+    expect(store.pagination.last).toBe(true)
     expect(store.loading).toBe(false)
   })
 

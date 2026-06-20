@@ -17,21 +17,27 @@ describe('productStore', () => {
     vi.clearAllMocks()
   })
 
-  it('estado inicial es vacío y sin errores', () => {
+  it('estado inicial es vacío, sin errores y con paginación en página 0', () => {
     const store = useProductStore()
 
     expect(store.products).toEqual([])
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
     expect(store.hasProducts).toBe(false)
+    expect(store.pagination.page).toBe(0)
+    expect(store.pagination.totalElements).toBe(0)
   })
 
-  it('fetchProducts - carga la lista y activa loading durante la llamada', async () => {
+  it('fetchProducts - carga la página y actualiza metadatos de paginación', async () => {
     const mockProducts = [
       { id: 'p-1', nombre: 'Laptop', precio: 2000 },
       { id: 'p-2', nombre: 'Monitor', precio: 500 }
     ]
-    productService.getAll.mockResolvedValue(mockProducts)
+    const pageResponse = {
+      content: mockProducts, page: 0, size: 10,
+      totalElements: 2, totalPages: 1, last: true
+    }
+    productService.getAll.mockResolvedValue(pageResponse)
 
     const store = useProductStore()
     const promise = store.fetchProducts()
@@ -40,6 +46,8 @@ describe('productStore', () => {
     await promise
 
     expect(store.products).toEqual(mockProducts)
+    expect(store.pagination.totalElements).toBe(2)
+    expect(store.pagination.last).toBe(true)
     expect(store.loading).toBe(false)
     expect(store.hasProducts).toBe(true)
   })
