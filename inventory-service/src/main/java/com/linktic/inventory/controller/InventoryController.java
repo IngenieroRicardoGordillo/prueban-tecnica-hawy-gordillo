@@ -8,13 +8,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
+@Validated
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
@@ -24,10 +29,16 @@ public class InventoryController {
     private final InventoryService inventoryService;
 
     @Tag(name = "Inventario", description = "API para gestión de inventario")
-    @Operation(summary = "Listar todo el inventario")
+    @Operation(summary = "Listar inventario paginado",
+            description = "Retorna registros de inventario con paginación. Ordenados por última actualización descendente.")
     @GetMapping("/inventory")
-    public ResponseEntity<ApiResponse<List<InventoryDTO>>> getAll() {
-        return ResponseEntity.ok(ApiResponse.ok(inventoryService.findAll()));
+    public ResponseEntity<ApiResponse<PageResponse<InventoryDTO>>> getAll(
+            @Parameter(description = "Número de página (0-indexed)")
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Parameter(description = "Cantidad de elementos por página (máx. 50)")
+            @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size) {
+        var pageable = PageRequest.of(page, size, Sort.by("updatedAt").descending());
+        return ResponseEntity.ok(ApiResponse.ok(inventoryService.findAll(pageable)));
     }
 
     @Tag(name = "Inventario")

@@ -1,8 +1,8 @@
 import { inventoryApi } from './api.js'
 
 export const inventoryService = {
-  async getAll() {
-    const { data } = await inventoryApi.get('/api/v1/inventory')
+  async getAll(page = 0, size = 10) {
+    const { data } = await inventoryApi.get('/api/v1/inventory', { params: { page, size } })
     return data.data
   },
 

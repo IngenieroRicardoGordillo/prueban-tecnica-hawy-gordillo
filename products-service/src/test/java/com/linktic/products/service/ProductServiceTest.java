@@ -1,6 +1,7 @@
 package com.linktic.products.service;
 
 import com.linktic.products.dto.CreateProductRequest;
+import com.linktic.products.dto.PageResponse;
 import com.linktic.products.dto.ProductDTO;
 import com.linktic.products.exception.ProductNotFoundException;
 import com.linktic.products.model.Product;
@@ -13,6 +14,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -55,14 +59,14 @@ class ProductServiceTest {
     void create_whenValidRequest_returnsProductDTO() {
         CreateProductRequest request = new CreateProductRequest(
                 "Laptop Dell XPS", new BigDecimal("2499.99"), "Laptop de alto rendimiento");
-        when(productRepository.save(any(Product.class))).thenReturn(product);
+        when(productRepository.saveAndFlush(any(Product.class))).thenReturn(product);
 
         ProductDTO result = productService.create(request);
 
         assertThat(result).isNotNull();
         assertThat(result.nombre()).isEqualTo("Laptop Dell XPS");
         assertThat(result.precio()).isEqualByComparingTo("2499.99");
-        verify(productRepository, times(1)).save(any(Product.class));
+        verify(productRepository).saveAndFlush(any(Product.class));
     }
 
     @Test
@@ -89,23 +93,29 @@ class ProductServiceTest {
     }
 
     @Test
-    @DisplayName("Listar productos - retorna lista completa")
-    void findAll_returnsAllProducts() {
-        when(productRepository.findAll()).thenReturn(List.of(product));
+    @DisplayName("Listar productos paginados - retorna página con contenido")
+    void findAll_returnsPaginatedProducts() {
+        Pageable pageable = PageRequest.of(0, 10);
+        when(productRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(product), pageable, 1));
 
-        List<ProductDTO> result = productService.findAll();
+        PageResponse<ProductDTO> result = productService.findAll(pageable);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).nombre()).isEqualTo("Laptop Dell XPS");
+        assertThat(result.content()).hasSize(1);
+        assertThat(result.content().get(0).nombre()).isEqualTo("Laptop Dell XPS");
+        assertThat(result.totalElements()).isEqualTo(1);
+        assertThat(result.totalPages()).isEqualTo(1);
+        assertThat(result.last()).isTrue();
     }
 
     @Test
-    @DisplayName("Listar productos - lista vacía")
-    void findAll_whenNoProducts_returnsEmptyList() {
-        when(productRepository.findAll()).thenReturn(List.of());
+    @DisplayName("Listar productos paginados - página vacía")
+    void findAll_whenNoProducts_returnsEmptyPage() {
+        Pageable pageable = PageRequest.of(0, 10);
+        when(productRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
-        List<ProductDTO> result = productService.findAll();
+        PageResponse<ProductDTO> result = productService.findAll(pageable);
 
-        assertThat(result).isEmpty();
+        assertThat(result.content()).isEmpty();
+        assertThat(result.totalElements()).isZero();
     }
 }

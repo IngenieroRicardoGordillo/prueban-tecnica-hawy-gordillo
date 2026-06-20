@@ -1,6 +1,7 @@
 package com.linktic.products.service.impl;
 
 import com.linktic.products.dto.CreateProductRequest;
+import com.linktic.products.dto.PageResponse;
 import com.linktic.products.dto.ProductDTO;
 import com.linktic.products.exception.ProductNotFoundException;
 import com.linktic.products.model.Product;
@@ -8,10 +9,10 @@ import com.linktic.products.repository.ProductRepository;
 import com.linktic.products.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -46,11 +47,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductDTO> findAll() {
-        log.info("Fetching all products");
-        return productRepository.findAll().stream()
-                .map(this::toDTO)
-                .toList();
+    public PageResponse<ProductDTO> findAll(Pageable pageable) {
+        log.info("Fetching products - page: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
+        return PageResponse.from(productRepository.findAll(pageable).map(this::toDTO));
     }
 
     private ProductDTO toDTO(Product product) {

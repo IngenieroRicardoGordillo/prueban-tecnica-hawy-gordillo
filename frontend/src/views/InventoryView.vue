@@ -56,6 +56,13 @@
             </tr>
           </tbody>
         </table>
+        <PaginationControls
+          :page="store.pagination.page"
+          :total-pages="store.pagination.totalPages"
+          :total-elements="store.pagination.totalElements"
+          :last="store.pagination.last"
+          @change="store.fetchInventory($event)"
+        />
       </div>
     </div>
 
@@ -76,6 +83,7 @@ import { useInventoryStore } from '@/stores/inventoryStore.js'
 import LoadingSpinner from '@/components/shared/LoadingSpinner.vue'
 import ErrorMessage from '@/components/shared/ErrorMessage.vue'
 import UpdateInventoryModal from '@/components/inventory/UpdateInventoryModal.vue'
+import PaginationControls from '@/components/shared/PaginationControls.vue'
 
 const store = useInventoryStore()
 const selectedItem = ref(null)
