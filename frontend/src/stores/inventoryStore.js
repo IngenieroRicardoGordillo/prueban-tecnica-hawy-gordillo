@@ -7,6 +7,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   const purchaseResult = ref(null)
   const loading = ref(false)
   const error = ref(null)
+  const pagination = ref({ page: 0, size: 10, totalElements: 0, totalPages: 0, last: true })
 
   function clearError() {
     error.value = null
@@ -16,11 +17,19 @@ export const useInventoryStore = defineStore('inventory', () => {
     purchaseResult.value = null
   }
 
-  async function fetchInventory() {
+  async function fetchInventory(page = 0) {
     loading.value = true
     error.value = null
     try {
-      inventoryList.value = await inventoryService.getAll()
+      const pageResponse = await inventoryService.getAll(page, pagination.value.size)
+      inventoryList.value = pageResponse.content
+      pagination.value = {
+        page: pageResponse.page,
+        size: pageResponse.size,
+        totalElements: pageResponse.totalElements,
+        totalPages: pageResponse.totalPages,
+        last: pageResponse.last
+      }
     } catch (err) {
       error.value = err.message
     } finally {
@@ -68,6 +77,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     purchaseResult,
     loading,
     error,
+    pagination,
     clearError,
     clearPurchaseResult,
     fetchInventory,
