@@ -6,11 +6,13 @@ on:
   push:
     branches: [develop]
 
+permissions:
+  contents: read
+
 jobs:
   test-products-service:
     name: Tests - products-service
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,29 +22,14 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-
-      - name: Cache Maven local repo
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: maven-${{ hashFiles('products-service/pom.xml') }}
-          restore-keys: maven-
 
       - name: Run tests
         working-directory: products-service
         run: mvn test -B
 
-      - name: Upload test report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: products-service-test-report
-          path: products-service/target/surefire-reports/
-
   test-inventory-service:
     name: Tests - inventory-service
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,28 +40,13 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Cache Maven local repo
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: maven-${{ hashFiles('inventory-service/pom.xml') }}
-          restore-keys: maven-
-
       - name: Run tests
         working-directory: inventory-service
         run: mvn test -B
 
-      - name: Upload test report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: inventory-service-test-report
-          path: inventory-service/target/surefire-reports/
-
   test-frontend:
     name: Tests - frontend
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
