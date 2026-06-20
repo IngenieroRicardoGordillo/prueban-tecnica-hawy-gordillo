@@ -111,8 +111,8 @@ class ProductControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/products - lista todos los productos")
-    void getAllProducts_returnsList() throws Exception {
+    @DisplayName("GET /api/v1/products - retorna página con contenido y metadatos")
+    void getAllProducts_returnsPaginatedResponse() throws Exception {
         productRepository.save(Product.builder()
                 .nombre("Teclado Mecánico")
                 .precio(new BigDecimal("120.00"))
@@ -120,8 +120,22 @@ class ProductControllerIntegrationTest {
                 .build());
 
         mockMvc.perform(get("/api/v1/products")
-                        .header("X-API-Key", apiKey))
+                        .header("X-API-Key", apiKey)
+                        .param("page", "0")
+                        .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(greaterThanOrEqualTo(1))));
+                .andExpect(jsonPath("$.data.content", hasSize(greaterThanOrEqualTo(1))))
+                .andExpect(jsonPath("$.data.page").value(0))
+                .andExpect(jsonPath("$.data.totalElements").isNumber())
+                .andExpect(jsonPath("$.data.totalPages").isNumber());
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/products - size mayor a 50 retorna 400")
+    void getAllProducts_withInvalidSize_returns400() throws Exception {
+        mockMvc.perform(get("/api/v1/products")
+                        .header("X-API-Key", apiKey)
+                        .param("size", "100"))
+                .andExpect(status().isBadRequest());
     }
 }
