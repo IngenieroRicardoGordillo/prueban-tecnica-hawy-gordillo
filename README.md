@@ -431,16 +431,17 @@ Los pipelines de integración y entrega continua están implementados en `.githu
 
 | Archivo | Trigger | Qué hace |
 |---------|---------|----------|
-| `ci.yml` | PR o push a cualquier rama | Ejecuta los tests de `products-service`, `inventory-service` y `frontend` en paralelo — **gratuito e ilimitado en repos públicos** |
+| `ci.yml` | PR o push a cualquier rama | Ejecuta los tests de `products-service`, `inventory-service` y `frontend` en paralelo |
 | `cd.yml` | Merge a `main` | Construye las 3 imágenes Docker localmente en el runner (`push: false`) y publica un resumen en GitHub Actions |
 
-> **Decisión técnica — CD como build-only:**
-> El pipeline de CD originalmente publicaba las imágenes en GitHub Container Registry (`ghcr.io`). Se modificó a **build-only** (`push: false`) por una restricción de facturación en la cuenta de GitHub durante el período de evaluación.
+> **Nota sobre estado de los pipelines en este repositorio:**
+> Ambos workflows están correctamente configurados y son válidos, pero fallan en GitHub Actions debido a una **restricción de facturación a nivel de cuenta** que bloquea la ejecución de runners antes de que arranquen (los checks fallan en 1-3 segundos, no por errores de código ni tests).
 >
-> **¿Por qué build-only y no eliminar el CD?**
-> Construir la imagen es la parte que valida que el `Dockerfile` es correcto, que las dependencias resuelven y que el artefacto final es coherente. El paso de push es solo transporte — no aporta valor de validación. Un CD que construye exitosamente las 3 imágenes demuestra que el proceso está automatizado y que los Dockerfiles son funcionales.
+> **Decisiones tomadas en consecuencia:**
+> - **CI (`ci.yml`):** Se mantiene sin cambios. Los tests se pueden verificar ejecutando `mvn test` en cada servicio y `npm test` en el frontend — todos pasan localmente (ver sección [Testing](#testing)).
+> - **CD (`cd.yml`):** Se modificó de `push: true` a `push: false`. El build de las imágenes Docker valida que los `Dockerfile` son correctos y que las dependencias resuelven; el paso de push a GHCR es solo transporte y no aporta valor de validación adicional. Para habilitarlo en producción basta con cambiar esa bandera y agregar los secrets del registry, sin tocar el código.
 >
-> Para habilitar el push a un registry en un entorno real basta con agregar las credenciales como secrets y cambiar `push: false` a `push: true` en `.github/workflows/cd.yml`, sin ningún otro cambio en el código.
+> Los archivos de workflow reflejan la intención y arquitectura CI/CD completa; la restricción es operacional, no técnica.
 
 ---
 
