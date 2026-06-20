@@ -425,6 +425,19 @@ npm run test:coverage # con cobertura
 
 ---
 
+## CI/CD
+
+Los pipelines de integración y entrega continua están implementados en `.github/workflows/`:
+
+| Archivo | Trigger | Qué hace |
+|---------|---------|----------|
+| `ci.yml` | PR hacia `develop` o `main`, push a `develop` | Ejecuta los tests de `products-service`, `inventory-service` y `frontend` en paralelo |
+| `cd.yml` | Merge a `main` | Construye y publica las 3 imágenes Docker en GitHub Container Registry (`ghcr.io`) con tag `:latest` y SHA corto del commit |
+
+> **Nota:** Los workflows están correctamente configurados y validados localmente. No fue posible ejecutarlos en GitHub Actions durante el desarrollo de esta prueba técnica debido a una restricción de facturación de la cuenta de GitHub (la cuenta free requería método de pago registrado para habilitar Actions en el período de evaluación). El repositorio queda listo para activar CI/CD en cuanto se resuelva dicha restricción, sin cambios adicionales en el código.
+
+---
+
 ## Git Flow
 
 Este proyecto sigue el modelo **Git Flow**:
