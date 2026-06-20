@@ -51,6 +51,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useProductStore } from '@/stores/productStore.js'
+import { useInventoryStore } from '@/stores/inventoryStore.js'
 import ProductForm from '@/components/products/ProductForm.vue'
 import ProductCard from '@/components/products/ProductCard.vue'
 import LoadingSpinner from '@/components/shared/LoadingSpinner.vue'
@@ -58,6 +59,7 @@ import ErrorMessage from '@/components/shared/ErrorMessage.vue'
 import PaginationControls from '@/components/shared/PaginationControls.vue'
 
 const store = useProductStore()
+const inventoryStore = useInventoryStore()
 const showForm = ref(false)
 const successMsg = ref('')
 const productFormRef = ref(null)
@@ -66,7 +68,9 @@ onMounted(() => store.fetchProducts())
 
 async function handleCreate(data) {
   try {
-    await store.createProduct(data)
+    const product = await store.createProduct(data)
+    // Inicializar inventario en 0 para que el producto aparezca en la vista de inventario
+    await inventoryStore.updateInventory(product.id, 0)
     showForm.value = false
     productFormRef.value?.reset()
     successMsg.value = 'Producto creado exitosamente'

@@ -26,7 +26,7 @@
         <table>
           <thead>
             <tr>
-              <th>Producto ID</th>
+              <th>Producto</th>
               <th>Cantidad</th>
               <th>Estado</th>
               <th>Última actualización</th>
@@ -35,7 +35,9 @@
           </thead>
           <tbody>
             <tr v-for="item in store.inventoryList" :key="item.id">
-              <td><code class="mono">{{ item.productoId }}</code></td>
+              <td>
+                <span class="product-name">{{ productName(item.productoId) }}</span>
+              </td>
               <td>
                 <span :class="stockBadgeClass(item.cantidad)">{{ item.cantidad }}</span>
               </td>
@@ -78,18 +80,32 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useInventoryStore } from '@/stores/inventoryStore.js'
+import { useProductStore } from '@/stores/productStore.js'
 import LoadingSpinner from '@/components/shared/LoadingSpinner.vue'
 import ErrorMessage from '@/components/shared/ErrorMessage.vue'
 import UpdateInventoryModal from '@/components/inventory/UpdateInventoryModal.vue'
 import PaginationControls from '@/components/shared/PaginationControls.vue'
 
 const store = useInventoryStore()
+const productStore = useProductStore()
 const selectedItem = ref(null)
 const successMsg = ref('')
 
-onMounted(() => store.fetchInventory())
+const productNameMap = computed(() => {
+  const map = {}
+  productStore.products.forEach(p => { map[p.id] = p.nombre })
+  return map
+})
+
+function productName(productoId) {
+  return productNameMap.value[productoId] || productoId
+}
+
+onMounted(async () => {
+  await Promise.all([store.fetchInventory(), productStore.fetchProducts()])
+})
 
 function openModal(item) {
   selectedItem.value = item
@@ -120,7 +136,7 @@ function formatDate(date) {
 
 <style scoped>
 .mb-4 { margin-bottom: 1rem; }
-.mono { font-family: monospace; font-size: 0.75rem; color: var(--color-primary); }
+.product-name { font-weight: 500; color: var(--color-text); }
 .empty-state {
   text-align: center;
   padding: 2rem;
