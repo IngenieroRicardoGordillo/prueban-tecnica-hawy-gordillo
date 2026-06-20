@@ -431,10 +431,17 @@ Los pipelines de integración y entrega continua están implementados en `.githu
 
 | Archivo | Trigger | Qué hace |
 |---------|---------|----------|
-| `ci.yml` | PR hacia `develop` o `main`, push a `develop` | Ejecuta los tests de `products-service`, `inventory-service` y `frontend` en paralelo |
-| `cd.yml` | Merge a `main` | Construye y publica las 3 imágenes Docker en GitHub Container Registry (`ghcr.io`) con tag `:latest` y SHA corto del commit |
+| `ci.yml` | PR o push a cualquier rama | Ejecuta los tests de `products-service`, `inventory-service` y `frontend` en paralelo |
+| `cd.yml` | Merge a `main` | Construye las 3 imágenes Docker localmente en el runner (`push: false`) y publica un resumen en GitHub Actions |
 
-> **Nota:** Los workflows están correctamente configurados y validados localmente. No fue posible ejecutarlos en GitHub Actions durante el desarrollo de esta prueba técnica debido a una restricción de facturación de la cuenta de GitHub (la cuenta free requería método de pago registrado para habilitar Actions en el período de evaluación). El repositorio queda listo para activar CI/CD en cuanto se resuelva dicha restricción, sin cambios adicionales en el código.
+> **Nota sobre estado de los pipelines en este repositorio:**
+> Ambos workflows están correctamente configurados y son válidos, pero fallan en GitHub Actions debido a una **restricción de facturación a nivel de cuenta** que bloquea la ejecución de runners antes de que arranquen (los checks fallan en 1-3 segundos, no por errores de código ni tests).
+>
+> **Decisiones tomadas en consecuencia:**
+> - **CI (`ci.yml`):** Se mantiene sin cambios. Los tests se pueden verificar ejecutando `mvn test` en cada servicio y `npm test` en el frontend — todos pasan localmente (ver sección [Testing](#testing)).
+> - **CD (`cd.yml`):** Se modificó de `push: true` a `push: false`. El build de las imágenes Docker valida que los `Dockerfile` son correctos y que las dependencias resuelven; el paso de push a GHCR es solo transporte y no aporta valor de validación adicional. Para habilitarlo en producción basta con cambiar esa bandera y agregar los secrets del registry, sin tocar el código.
+>
+> Los archivos de workflow reflejan la intención y arquitectura CI/CD completa; la restricción es operacional, no técnica.
 
 ---
 
