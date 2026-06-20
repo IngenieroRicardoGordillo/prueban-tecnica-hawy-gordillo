@@ -61,12 +61,17 @@ class InventoryControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/inventory - retorna lista")
-    void getAllInventory_returnsOk() throws Exception {
+    @DisplayName("GET /api/v1/inventory - retorna página paginada con metadatos")
+    void getAllInventory_returnsPaginatedResponse() throws Exception {
         mockMvc.perform(get("/api/v1/inventory")
-                        .header("X-API-Key", apiKey))
+                        .header("X-API-Key", apiKey)
+                        .param("page", "0")
+                        .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success", is(true)));
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.page").value(0))
+                .andExpect(jsonPath("$.data.totalElements").isNumber());
     }
 
     @Test
@@ -137,6 +142,16 @@ class InventoryControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success", is(false)));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/inventory?size=100 - tamaño mayor a 50 retorna 400")
+    void getAllInventory_withInvalidSize_returns400() throws Exception {
+        mockMvc.perform(get("/api/v1/inventory")
+                        .header("X-API-Key", apiKey)
+                        .param("size", "100"))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success", is(false)));
     }
 
