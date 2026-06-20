@@ -71,6 +71,7 @@
     <UpdateInventoryModal
       v-if="selectedItem"
       :producto-id="selectedItem.productoId"
+      :producto-nombre="productName(selectedItem.productoId)"
       :current-cantidad="selectedItem.cantidad"
       :loading="store.loading"
       @close="selectedItem = null"

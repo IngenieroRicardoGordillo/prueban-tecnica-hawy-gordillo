@@ -7,7 +7,9 @@
       </div>
 
       <div class="modal-body">
-        <p class="modal-subtitle">Producto ID: <code>{{ productoId }}</code></p>
+        <p class="modal-subtitle">
+          Producto: <strong>{{ productoNombre || productoId }}</strong>
+        </p>
 
         <div class="form-group">
           <label class="form-label" for="cantidad">Nueva cantidad *</label>
@@ -39,6 +41,7 @@ import { ref } from 'vue'
 
 const props = defineProps({
   productoId: { type: String, required: true },
+  productoNombre: { type: String, default: '' },
   currentCantidad: { type: Number, default: 0 },
   loading: { type: Boolean, default: false }
 })
@@ -93,7 +96,7 @@ function handleSave() {
 }
 .modal-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
 .modal-subtitle { font-size: 0.875rem; color: var(--color-gray-500); }
-.modal-subtitle code { font-family: monospace; color: var(--color-primary); }
+.modal-subtitle strong { color: var(--color-text); font-weight: 600; }
 .modal-footer {
   display: flex;
   justify-content: flex-end;
