@@ -431,10 +431,16 @@ Los pipelines de integración y entrega continua están implementados en `.githu
 
 | Archivo | Trigger | Qué hace |
 |---------|---------|----------|
-| `ci.yml` | PR hacia `develop` o `main`, push a `develop` | Ejecuta los tests de `products-service`, `inventory-service` y `frontend` en paralelo |
-| `cd.yml` | Merge a `main` | Construye y publica las 3 imágenes Docker en GitHub Container Registry (`ghcr.io`) con tag `:latest` y SHA corto del commit |
+| `ci.yml` | PR o push a cualquier rama | Ejecuta los tests de `products-service`, `inventory-service` y `frontend` en paralelo — **gratuito e ilimitado en repos públicos** |
+| `cd.yml` | Merge a `main` | Construye las 3 imágenes Docker localmente en el runner (`push: false`) y publica un resumen en GitHub Actions |
 
-> **Nota:** Los workflows están correctamente configurados y validados localmente. No fue posible ejecutarlos en GitHub Actions durante el desarrollo de esta prueba técnica debido a una restricción de facturación de la cuenta de GitHub (la cuenta free requería método de pago registrado para habilitar Actions en el período de evaluación). El repositorio queda listo para activar CI/CD en cuanto se resuelva dicha restricción, sin cambios adicionales en el código.
+> **Decisión técnica — CD como build-only:**
+> El pipeline de CD originalmente publicaba las imágenes en GitHub Container Registry (`ghcr.io`). Se modificó a **build-only** (`push: false`) por una restricción de facturación en la cuenta de GitHub durante el período de evaluación.
+>
+> **¿Por qué build-only y no eliminar el CD?**
+> Construir la imagen es la parte que valida que el `Dockerfile` es correcto, que las dependencias resuelven y que el artefacto final es coherente. El paso de push es solo transporte — no aporta valor de validación. Un CD que construye exitosamente las 3 imágenes demuestra que el proceso está automatizado y que los Dockerfiles son funcionales.
+>
+> Para habilitar el push a un registry en un entorno real basta con agregar las credenciales como secrets y cambiar `push: false` a `push: true` en `.github/workflows/cd.yml`, sin ningún otro cambio en el código.
 
 ---
 
