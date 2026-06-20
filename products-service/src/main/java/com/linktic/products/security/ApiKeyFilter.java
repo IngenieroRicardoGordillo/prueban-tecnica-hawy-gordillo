@@ -1,9 +1,12 @@
 package com.linktic.products.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.linktic.products.dto.ApiResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -15,6 +18,7 @@ import java.util.List;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class ApiKeyFilter extends OncePerRequestFilter {
 
     private static final String API_KEY_HEADER = "X-API-Key";
@@ -24,6 +28,8 @@ public class ApiKeyFilter extends OncePerRequestFilter {
             "/api-docs",
             "/actuator"
     );
+
+    private final ObjectMapper objectMapper;
 
     @Value("${api.key}")
     private String apiKey;
@@ -45,10 +51,7 @@ public class ApiKeyFilter extends OncePerRequestFilter {
             log.warn("Unauthorized request to {} - invalid or missing API key", path);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            response.getWriter().write(
-                    "{\"success\":false,\"message\":\"API Key inválida o ausente\",\"timestamp\":\"" +
-                    java.time.LocalDateTime.now() + "\"}"
-            );
+            objectMapper.writeValue(response.getWriter(), ApiResponse.error("API Key inválida o ausente"));
             return;
         }
 

@@ -452,16 +452,43 @@ main          ←──── release/1.0.0 ←──── develop
 
 ## Uso de IA
 
-Este proyecto fue desarrollado con asistencia de **Claude Sonnet 4.6** (Anthropic) a través de la herramienta **Claude Code**.
+Este proyecto fue desarrollado con asistencia de **Claude Sonnet 4.6** (Anthropic) a través de **Claude Code**, usado como acelerador de desarrollo — no como sustituto del criterio técnico.
 
-**Áreas de asistencia:**
-- Diseño de la arquitectura de microservicios y decisiones técnicas.
-- Generación del scaffolding completo de ambos servicios Spring Boot.
-- Implementación de patrones: `ApiKeyFilter`, Spring Retry con backoff exponencial, `GlobalExceptionHandler`.
-- Estructura del frontend Vue.js con Composition API, Pinia stores y servicios Axios.
-- Escritura de tests unitarios y de integración (backend y frontend).
-- Configuración de Docker Compose con health checks, redes aisladas y volúmenes persistentes.
-- Diagramas Mermaid de arquitectura, flujo de compra y componentes.
-- Implementación de Git Flow y estructura de ramas.
+### Cómo se usó
 
-**Revisión humana:** Todo el código generado fue revisado para garantizar coherencia, buenas prácticas y corrección funcional.
+La IA se empleó para scaffolding inicial, generación de boilerplate repetitivo y como segundo par de ojos para detectar inconsistencias. En ningún caso se aceptó código sin revisarlo y comprenderlo.
+
+### Decisiones que tomé yo (no la IA)
+
+- **¿Dónde vive `POST /purchases`?** La IA propuso inicialmente ponerlo en products-service. Lo moví a inventory-service porque la atomicidad de validar stock + decrementar + registrar compra requiere una sola transacción JPA sobre la misma base de datos. Explicarlo fue criterio propio.
+- **Spring Retry vs Resilience4j:** La IA sugirió Resilience4j. Elegí Spring Retry porque ya es parte del ecosistema Spring Boot, no agrega dependencias pesadas y cubre exactamente el caso de uso (reintentos con backoff). Para circuit breaker completo sí usaría Resilience4j.
+- **`saveAndFlush()` en lugar de `save()`:** El código generado usaba `save()`. Al revisar los tests noté que `createdAt` y `updatedAt` llegaban `null` en la respuesta. Investigué: `@CreationTimestamp` lo popula Hibernate al hacer flush, no al devolver la entidad en memoria. Corregí a `saveAndFlush()` en todos los servicios.
+- **Health checks con `wget` en lugar de `curl`:** Docker Compose generado usaba `curl`. Al construir la imagen noté que `eclipse-temurin:17-jre-alpine` no incluye curl (imagen mínima). Reemplacé por `wget -qO-` que sí trae BusyBox Alpine. Los contenedores pasaron de `unhealthy` a `healthy`.
+- **Patrón Database per Service:** La IA no lo propuso explícitamente. Lo apliqué conscientemente para garantizar independencia total entre microservicios — cada uno tiene su propia instancia PostgreSQL.
+
+### Qué corregí del output generado
+
+| Problema detectado | Corrección aplicada |
+|--------------------|---------------------|
+| `save()` → timestamps `null` en respuesta | Cambié a `saveAndFlush()` en todos los repositorios |
+| Health check con `curl` (no disponible en Alpine JRE) | Reemplazado por `wget -qO-` |
+| JSON de error 401 construido como `String` manual en `ApiKeyFilter` | Refactorizado a `ObjectMapper.writeValue()` para consistencia con el resto de la API |
+| `version: '3.8'` en docker-compose.yml (deprecado en Compose v2) | Eliminado el atributo `version` |
+| `ddl-auto: update` sin contexto | Documentado con comentario: aceptable para prueba técnica, en producción requiere Flyway/Liquibase |
+
+### Limitación de seguridad conocida
+
+La comparación de API keys usa `String.equals()`:
+
+```java
+if (!apiKey.equals(providedKey)) { ... }
+```
+
+Esto es suficiente para el contexto de esta prueba técnica. En producción, para APIs expuestas a internet se usaría comparación en tiempo constante (`MessageDigest.isEqual()`) para evitar timing attacks. Se documenta como decisión consciente, no como omisión.
+
+### Validación del código generado
+
+- Todos los tests de integración se ejecutaron contra H2 real (no mocks de repositorio).
+- Se verificó el flujo completo con `docker compose up --build` y pruebas manuales en Swagger UI.
+- Se revisó que la seguridad (`ApiKeyFilter`) bloqueara correctamente rutas protegidas y permitiera Swagger/actuator sin clave.
+- Los diagramas Mermaid se validaron visualmente en GitHub antes de dar por terminada la documentación.
