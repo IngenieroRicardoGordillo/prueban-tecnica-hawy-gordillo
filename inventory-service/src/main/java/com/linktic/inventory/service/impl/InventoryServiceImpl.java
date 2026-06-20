@@ -12,11 +12,11 @@ import com.linktic.inventory.repository.PurchaseRepository;
 import com.linktic.inventory.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -30,11 +30,9 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<InventoryDTO> findAll() {
-        log.info("Fetching all inventory records");
-        return inventoryRepository.findAll().stream()
-                .map(this::toDTO)
-                .toList();
+    public PageResponse<InventoryDTO> findAll(Pageable pageable) {
+        log.info("Fetching inventory - page: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
+        return PageResponse.from(inventoryRepository.findAll(pageable).map(this::toDTO));
     }
 
     @Override
