@@ -7,6 +7,7 @@ export const useProductStore = defineStore('products', () => {
   const currentProduct = ref(null)
   const loading = ref(false)
   const error = ref(null)
+  const pagination = ref({ page: 0, size: 10, totalElements: 0, totalPages: 0, last: true })
 
   const hasProducts = computed(() => products.value.length > 0)
 
@@ -14,11 +15,19 @@ export const useProductStore = defineStore('products', () => {
     error.value = null
   }
 
-  async function fetchProducts() {
+  async function fetchProducts(page = 0) {
     loading.value = true
     error.value = null
     try {
-      products.value = await productService.getAll()
+      const pageResponse = await productService.getAll(page, pagination.value.size)
+      products.value = pageResponse.content
+      pagination.value = {
+        page: pageResponse.page,
+        size: pageResponse.size,
+        totalElements: pageResponse.totalElements,
+        totalPages: pageResponse.totalPages,
+        last: pageResponse.last
+      }
     } catch (err) {
       error.value = err.message
     } finally {
@@ -58,6 +67,7 @@ export const useProductStore = defineStore('products', () => {
     currentProduct,
     loading,
     error,
+    pagination,
     hasProducts,
     clearError,
     fetchProducts,

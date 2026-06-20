@@ -17,6 +17,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -61,15 +64,16 @@ class InventoryServiceTest {
     }
 
     @Test
-    @DisplayName("findAll - retorna todos los registros de inventario")
-    void findAll_returnsAllInventory() {
-        when(inventoryRepository.findAll()).thenReturn(List.of(inventory));
+    @DisplayName("findAll - retorna página de registros de inventario")
+    void findAll_returnsPaginatedInventory() {
+        Pageable pageable = PageRequest.of(0, 10);
+        when(inventoryRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(inventory), pageable, 1));
 
-        List<InventoryDTO> result = inventoryService.findAll();
+        PageResponse<InventoryDTO> result = inventoryService.findAll(pageable);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).productoId()).isEqualTo(productoId);
-        assertThat(result.get(0).cantidad()).isEqualTo(100);
+        assertThat(result.content()).hasSize(1);
+        assertThat(result.content().get(0).productoId()).isEqualTo(productoId);
+        assertThat(result.totalElements()).isEqualTo(1);
     }
 
     @Test
@@ -97,13 +101,13 @@ class InventoryServiceTest {
     @DisplayName("update - crea o actualiza inventario correctamente")
     void update_createsOrUpdatesInventory() {
         when(inventoryRepository.findByProductoId(productoId)).thenReturn(Optional.of(inventory));
-        when(inventoryRepository.save(any(Inventory.class))).thenReturn(inventory);
+        when(inventoryRepository.saveAndFlush(any(Inventory.class))).thenReturn(inventory);
 
         UpdateInventoryRequest request = new UpdateInventoryRequest(50);
         InventoryDTO result = inventoryService.update(productoId, request);
 
         assertThat(result.productoId()).isEqualTo(productoId);
-        verify(inventoryRepository, times(1)).save(any(Inventory.class));
+        verify(inventoryRepository).saveAndFlush(any(Inventory.class));
     }
 
     @Test
@@ -122,16 +126,16 @@ class InventoryServiceTest {
 
         when(productsClient.findById(productoId)).thenReturn(Optional.of(productDTO));
         when(inventoryRepository.findByProductoId(productoId)).thenReturn(Optional.of(inventory));
-        when(inventoryRepository.save(any(Inventory.class))).thenReturn(inventory);
-        when(purchaseRepository.save(any(Purchase.class))).thenReturn(savedPurchase);
+        when(inventoryRepository.saveAndFlush(any(Inventory.class))).thenReturn(inventory);
+        when(purchaseRepository.saveAndFlush(any(Purchase.class))).thenReturn(savedPurchase);
 
         PurchaseResultDTO result = inventoryService.purchase(request);
 
         assertThat(result.status()).isEqualTo("COMPLETED");
         assertThat(result.cantidad()).isEqualTo(5);
         assertThat(result.total()).isEqualByComparingTo("7500.00");
-        verify(inventoryRepository, times(1)).save(any(Inventory.class));
-        verify(purchaseRepository, times(1)).save(any(Purchase.class));
+        verify(inventoryRepository).saveAndFlush(any(Inventory.class));
+        verify(purchaseRepository).saveAndFlush(any(Purchase.class));
     }
 
     @Test

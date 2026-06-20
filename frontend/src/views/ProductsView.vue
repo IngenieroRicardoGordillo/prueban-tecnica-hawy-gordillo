@@ -28,8 +28,17 @@
 
     <LoadingSpinner v-if="store.loading && !store.hasProducts" text="Cargando productos..." />
 
-    <div v-else-if="store.hasProducts" class="products-grid">
-      <ProductCard v-for="product in store.products" :key="product.id" :product="product" />
+    <div v-else-if="store.hasProducts">
+      <div class="products-grid">
+        <ProductCard v-for="product in store.products" :key="product.id" :product="product" />
+      </div>
+      <PaginationControls
+        :page="store.pagination.page"
+        :total-pages="store.pagination.totalPages"
+        :total-elements="store.pagination.totalElements"
+        :last="store.pagination.last"
+        @change="store.fetchProducts($event)"
+      />
     </div>
 
     <div v-else-if="!store.loading" class="empty-state card">
@@ -46,6 +55,7 @@ import ProductForm from '@/components/products/ProductForm.vue'
 import ProductCard from '@/components/products/ProductCard.vue'
 import LoadingSpinner from '@/components/shared/LoadingSpinner.vue'
 import ErrorMessage from '@/components/shared/ErrorMessage.vue'
+import PaginationControls from '@/components/shared/PaginationControls.vue'
 
 const store = useProductStore()
 const showForm = ref(false)
